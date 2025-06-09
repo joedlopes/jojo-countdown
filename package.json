@@ -1,0 +1,64 @@
+{
+  "name": "jojo-countdown",
+  "version": "0.0.1",
+  "description": "JoJo-Countdown! is a playful productivity timer that helps you stay focused using countdown sessions and break reminders. Built with JavaScript, Bootstrap, and a space-surfing cat mascot, JoJo Countdown turns your task list into a fun, time-managed flow. Built with HTML, CSS, JS.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Joed Lopes da Silva",
+    "email": "joed@jojo-countdown.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.jojo.countdown",
+    "productName": "JoJo Countdown",
+    "asar": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.js",
+      "assets/**/*",
+      "static/**/*",
+      "index.html"
+    ],
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage",
+        "dir"
+      ],
+      "icon": "assets/icons/icon.png",
+      "category": "Utility"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

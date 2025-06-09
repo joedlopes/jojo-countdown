@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JoJo-Countdown!</title>
+    <link rel="icon" type="image/png" href="assets/icons/icon.png">
+
+    <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        /* --- Local Font Definitions using TTF --- */
+        @font-face {
+            font-family: 'Roboto Mono';
+            font-style: normal;
+            font-weight: 400;
+            src: local(''),
+                url('assets/fonts/RobotoMono-Regular.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Roboto Mono';
+            font-style: normal;
+            font-weight: 700;
+            src: local(''),
+                url('assets/fonts/RobotoMono-Bold.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Spline Sans Mono';
+            font-style: normal;
+            font-weight: 700;
+            src: local(''),
+                url('assets/fonts/SplineSansMono-Bold.ttf') format('truetype');
+        }
+
+        /* General styling */
+        body {
+            transition: background-color 0.3s, color 0.3s;
+            /* Font is now determined by the theme selection. Defaults to Bootstrap's standard font. */
+        }
+
+        /* Ensure layout is fluid and avoids horizontal scroll */
+        .container-fluid {
+            max-width: 1400px;
+        }
+
+        /* Task item styling */
+        .task-item[draggable="true"] {
+            cursor: grab;
+        }
+
+        .task-item {
+            transition: background-color 0.3s, border-color 0.3s, padding-bottom 0.3s;
+        }
+
+        .task-item.done {
+            background-color: #d1e7dd;
+            /* Light green */
+            border-color: #a3cfbb;
+        }
+
+        .task-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+
+        html[data-bs-theme="dark"] .task-item.done {
+            background-color: #0d3d23;
+            border-color: #1a5937;
+        }
+
+        .color-badge {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Focus mode modal styling */
+        #focus-modal .modal-content {
+            height: 100vh;
+            border-radius: 0;
+        }
+
+        #focus-timer {
+            font-size: clamp(4rem, 20vw, 12rem);
+            font-weight: bold;
+        }
+
+        #focus-bottom-controls {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+        }
+
+        #focus-modal .modal-body:hover #focus-bottom-controls {
+            opacity: 1;
+        }
+
+
+        /* Timeline styling */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #e9ecef;
+        }
+
+        html[data-bs-theme="dark"] .timeline::before {
+            background-color: #343a40;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.1rem;
+            top: 0.5rem;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #0d6efd;
+            /* Blue for log items */
+            border: 2px solid #fff;
+        }
+
+        /* Schedule-specific timeline item color */
+        .timeline-item.schedule-item::before {
+            background-color: #fd7e14;
+            /* Orange for schedule items */
+        }
+
+        .timeline-item.schedule-break-item::before {
+            background-color: #6c757d;
+            /* Gray for break items */
+        }
+
+        html[data-bs-theme="dark"] .timeline-item::before {
+            border-color: #212529;
+        }
+
+        /* --- Neo-Brutalist Themes --- */
+        html[data-bs-theme*="brutalist"] body {
+            font-family: 'Spline Sans Mono', 'Roboto Mono', monospace;
+            font-weight: 700;
+            font-size: 15px;
+            /* Slightly reduced font size */
+        }
+
+        /* Light Brutalist Theme */
+        [data-bs-theme="light-brutalist"] {
+            --bs-body-bg: #FDF4E3;
+            /* Creamy background */
+            --bs-body-color: #000000;
+            --bs-border-color: #000000;
+            --bs-tertiary-bg: #EAE0D1;
+            /* Lighter cream for backgrounds */
+            --bs-primary: #FF4F00;
+            /* Vibrant Orange */
+            --bs-primary-rgb: 255, 79, 0;
+            --bs-secondary: #00A1E4;
+            /* Bright Blue */
+            --bs-success: #32CD32;
+            /* Lime Green */
+            --bs-danger: #E4007C;
+            /* Hot Pink */
+            --bs-warning: #FFC700;
+            /* Bright Yellow */
+            --bs-info: #9F00E4;
+            /* Purple */
+            --bs-link-color: #000000;
+            --bs-link-hover-color: #FF4F00;
+        }
+
+        /* Dark Brutalist Theme - Cyberpunk Green */
+        [data-bs-theme="dark-brutalist"] {
+            --bs-body-bg: #0A0D0A;
+            --bs-body-color: #C8FDD1;
+            /* Light green text */
+            --bs-border-color: #00FF41;
+            /* Cyber green border */
+            --bs-tertiary-bg: #0F1A12;
+            /* Dark green-tinted background */
+            --bs-primary: #00FF41;
+            /* Cyber Green */
+            --bs-primary-rgb: 0, 255, 65;
+            --bs-secondary: #FF00FF;
+            /* Magenta */
+            --bs-success: #39FF14;
+            /* Neon Green */
+            --bs-danger: #FF5F1F;
+            /* Bright Orange */
+            --bs-warning: #DFFF00;
+            /* Acid Yellow */
+            --bs-info: #9D00FF;
+            /* Futuristic Purple */
+            --bs-link-color: var(--bs-primary);
+            --bs-link-hover-color: var(--bs-body-color);
+        }
+
+        [data-bs-theme*="brutalist"] .card,
+        [data-bs-theme*="brutalist"] .btn,
+        [data-bs-theme*="brutalist"] .form-control,
+        [data-bs-theme*="brutalist"] .modal-content,
+        [data-bs-theme*="brutalist"] .nav-tabs .nav-link,
+        [data-bs-theme*="brutalist"] header,
+        [data-bs-theme*="brutalist"] footer {
+            border-radius: 0 !important;
+            border: 2px solid var(--bs-border-color) !important;
+            box-shadow: 4px 4px 0px 0px var(--bs-border-color) !important;
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+
+        [data-bs-theme*="brutalist"] .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px var(--bs-border-color) !important;
+        }
+
+        [data-bs-theme*="brutalist"] .nav-tabs {
+            border-bottom: 2px solid var(--bs-border-color) !important;
+        }
+
+        [data-bs-theme="light-brutalist"] .nav-tabs .nav-link.active {
+            border-color: var(--bs-border-color);
+            background-color: var(--bs-tertiary-bg);
+            border-bottom-color: var(--bs-tertiary-bg) !important;
+        }
+
+        [data-bs-theme="dark-brutalist"] .nav-tabs .nav-link.active {
+            background-color: var(--bs-primary);
+            color: #000;
+            border-color: var(--bs-border-color);
+            border-bottom-color: var(--bs-primary) !important;
+        }
+
+        [data-bs-theme*="brutalist"] .nav-tabs .nav-link:not(.active):hover {
+            border-color: var(--bs-border-color) !important;
+        }
+
+        [data-bs-theme*="brutalist"] header,
+        [data-bs-theme*="brutalist"] footer {
+            background-color: var(--bs-tertiary-bg);
+            box-shadow: 0 4px 0 0 var(--bs-border-color) !important;
+        }
+
+        [data-bs-theme*="brutalist"] .btn-outline-primary:hover {
+            color: #000 !important;
+        }
+
+        [data-bs-theme*="brutalist"] .timeline::before {
+            background-color: var(--bs-border-color);
+            width: 3px;
+        }
+
+        [data-bs-theme="dark-brutalist"] .text-muted {
+            color: var(--bs-body-color) !important;
+            opacity: 0.75;
+        }
+
+        [data-bs-theme="dark-brutalist"] .progress {
+            background-color: #333 !important;
+            border: 2px solid var(--bs-border-color) !important;
+        }
+
+        [data-bs-theme="dark-brutalist"] .progress-bar {
+            background-color: var(--bs-primary) !important;
+        }
+
+        [data-bs-theme="light-brutalist"] .progress {
+            background-color: #ccc !important;
+            border: 2px solid var(--bs-border-color) !important;
+        }
+
+        [data-bs-theme="light-brutalist"] .progress-bar {
+            background-color: var(--bs-primary) !important;
+        }
+
+        [data-bs-theme="light-brutalist"] .task-item.done {
+            background-color: var(--bs-success);
+            color: #000;
+            border-color: #000;
+        }
+
+        [data-bs-theme="dark-brutalist"] .task-item.done {
+            background-color: #222522;
+            color: #8a8a8a;
+            border-color: #555555;
+            box-shadow: 4px 4px 0px 0px #555555 !important;
+        }
+
+
+        /* Utility classes */
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        #task-list-container {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- Header -->
+    <header class="py-3 mb-4 border-bottom">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <h1 class="h4 mb-0">
+                <i class="bi bi-list-check me-2"></i>JoJo-Countdown!
+            </h1>
+            <div id="header-controls">
+                <!-- Theme switch is now in settings -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container-fluid flex-grow-1">
+        <ul class="nav nav-tabs" id="main-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="manage-tab" data-bs-toggle="tab" data-bs-target="#manage-pane"
+                    type="button" role="tab" aria-controls="manage-pane" aria-selected="true"><i
+                        class="bi bi-pencil-square me-1"></i> Task Management</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule-pane"
+                    type="button" role="tab" aria-controls="schedule-pane" aria-selected="false"><i
+                        class="bi bi-clock-history me-1"></i> Planned Schedule</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-pane"
+                    type="button" role="tab" aria-controls="timeline-pane" aria-selected="false"><i
+                        class="bi bi-calendar-event me-1"></i> Task Log</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane"
+                    type="button" role="tab" aria-controls="settings-pane" aria-selected="false"><i
+                        class="bi bi-gear-fill me-1"></i> Settings</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-pane" type="button"
+                    role="tab" aria-controls="data-pane" aria-selected="false"><i class="bi bi-arrow-down-up me-1"></i>
+                    Import/Export</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button"
+                    role="tab" aria-controls="ai-pane" aria-selected="false"><i class="bi bi-robot me-1"></i> AI
+                    Assistant Guide</button>
+            </li>
+        </ul>
+
+        <div class="tab-content pt-4" id="main-tabs-content">
+            <!-- Task Management Pane -->
+            <div class="tab-pane fade show active" id="manage-pane" role="tabpanel" aria-labelledby="manage-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Task List</h2>
+                    <div>
+                        <button class="btn btn-danger me-2" id="clear-all-tasks-btn"><i
+                                class="bi bi-trash3-fill me-2"></i>Clear All</button>
+                        <button class="btn btn-primary" id="add-task-btn"><i class="bi bi-plus-circle-fill me-2"></i>Add
+                            New Task</button>
+                    </div>
+                </div>
+                <div id="task-list-container">
+                    <div id="task-list" class="vstack gap-3">
+                        <!-- Task items will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Planned Schedule Pane -->
+            <div class="tab-pane fade" id="schedule-pane" role="tabpanel" aria-labelledby="schedule-tab">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h2 class="mb-4">Planned Schedule</h2>
+                        <p class="text-muted">This is a projected schedule. It starts from the end of a running task, or
+                            from now if no tasks are active.</p>
+                        <div id="schedule-list" class="timeline">
+                            <!-- Schedule items will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Pane -->
+            <div class="tab-pane fade" id="timeline-pane" role="tabpanel" aria-labelledby="timeline-tab">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="mb-0">Task Log</h2>
+                            <button class="btn btn-sm btn-outline-danger" id="clear-timeline-btn"><i
+                                    class="bi bi-trash"></i> Clear Log</button>
+                        </div>
+                        <div id="timeline-log" class="timeline">
+                            <!-- Timeline items will be injected here -->
+                            <p class="text-muted">No activity yet. Start a task to begin your timeline!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Pane -->
+            <div class="tab-pane fade" id="settings-pane" role="tabpanel" aria-labelledby="settings-tab">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h2 class="mb-4">Application Settings</h2>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Theme</h5>
+                                <p class="card-text">Select a visual theme for the application.</p>
+                                <div class="mb-3">
+                                    <label for="theme-select" class="form-label"><i class="bi bi-palette-fill me-1"></i>
+                                        Appearance</label>
+                                    <select class="form-select" id="theme-select">
+                                        <option value="light">Default Light</option>
+                                        <option value="dark">Default Dark</option>
+                                        <option value="light-brutalist">Neo-Brutalist (Light)</option>
+                                        <option value="dark-brutalist">Neo-Brutalist (Dark)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Audio</h5>
+                                <p class="card-text">Configure audio settings.</p>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="tick-sound-switch">
+                                    <label class="form-check-label" for="tick-sound-switch"><i
+                                            class="bi bi-volume-up"></i> Timer Tick Sound</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import/Export Pane -->
+            <div class="tab-pane fade" id="data-pane" role="tabpanel" aria-labelledby="data-tab">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h3><i class="bi bi-box-arrow-up me-2"></i>Export Tasks</h3>
+                        <p>Copy the JSON below or download it as a file.</p>
+                        <textarea class="form-control" id="export-textarea" rows="10" readonly></textarea>
+                        <button class="btn btn-primary mt-2" id="download-json-btn"><i class="bi bi-download me-1"></i>
+                            Download JSON</button>
+                    </div>
+                    <div class="col-md-6">
+                        <h3><i class="bi bi-box-arrow-down me-2"></i>Import Tasks</h3>
+                        <p>Paste JSON here to import tasks. This will replace existing tasks.</p>
+                        <textarea class="form-control" id="import-textarea" rows="10"></textarea>
+                        <button class="btn btn-secondary mt-2 me-2" id="import-json-btn"><i
+                                class="bi bi-upload me-1"></i> Import from Text</button>
+                        <input type="file" id="import-file-input" class="d-none" accept=".json">
+                        <button class="btn btn-secondary mt-2" id="load-file-btn"><i
+                                class="bi bi-folder2-open me-1"></i> Load from File</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Assistant Guide Pane -->
+            <div class="tab-pane fade" id="ai-pane" role="tabpanel" aria-labelledby="ai-tab">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h2><i class="bi bi-robot me-2"></i>AI Assistant Guide</h2>
+                        <p>You can use an AI assistant like Gemini to quickly generate a list of tasks. Copy the prompt
+                            below and paste it into your favorite AI chat interface.</p>
+                        <div class="card">
+                            <div class="card-body">
+                                <pre id="ai-prompt-text" class="p-3 bg-body-tertiary rounded border"
+                                    style="white-space: pre-wrap; word-wrap: break-word;"><code>Generate a JSON array of tasks for a productivity app. Each task object must have the following properties:
+- "title": A string for the task name (required).
+- "description": A short string explaining the task (optional).
+- "duration": The estimated duration in minutes (number, required).
+- "breakDuration": A number for the break time in minutes after the task is completed (optional, defaults to 0).
+- "color": A hexadecimal color code string (e.g., "#3498db").
+- "completed": A boolean, always set to false initially.
+
+Example JSON structure:
+[
+  {
+    "title": "Design new homepage mockups",
+    "description": "Focus on a clean and modern user interface.",
+    "duration": 90,
+    "breakDuration": 15,
+    "color": "#3498db",
+    "completed": false
+  },
+  {
+    "title": "Develop API endpoints",
+    "description": "Create endpoints for user authentication and data retrieval.",
+    "duration": 120,
+    "breakDuration": 20,
+    "color": "#e74c3c",
+    "completed": false
+  }
+]
+
+Now, create a list of 5 tasks for a software development project.</code></pre>
+                                <button class="btn btn-outline-secondary mt-2" id="copy-prompt-btn"><i
+                                        class="bi bi-clipboard me-1"></i> Copy Prompt</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 border-top">
+        <div class="container-fluid text-center">
+            <p class="text-muted mb-0">JoJo-Countdown! - <strong>Keep your tasks and focus on track!</strong></p>
+            <p class="text-muted small mb-0">No data is stored or tracked. It is all private on the client side.</p>
+        </div>
+    </footer>
+
+    <!-- Full-screen Focus Modal -->
+    <div class="modal fade" id="focus-modal" tabindex="-1" aria-labelledby="focusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div
+                    class="modal-body d-flex flex-column justify-content-center align-items-center text-center p-4 position-relative">
+                    <div class="container" style="max-width: 900px;">
+                        <h2 id="focus-title" class="display-4"></h2>
+                        <p id="focus-description" class="lead mb-4"></p>
+                        <div id="focus-timer" class="my-4">00:00</div>
+
+                        <div id="focus-progress-container" class="w-100">
+                            <div class="progress" style="height: 20px; background-color: rgba(0,0,0,0.1);">
+                                <div id="focus-progress-bar" class="progress-bar" role="progressbar" style="width: 0%;"
+                                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <span id="focus-start-time" class="small"></span>
+                                <span id="focus-end-time" class="small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="focus-bottom-controls" class="p-4">
+                        <div id="focus-controls" class="mt-5">
+                            <!-- Timer controls appear here -->
+                        </div>
+                        <div id="focus-completion-controls" class="mt-5 d-none">
+                            <button class="btn btn-lg btn-success me-2" id="focus-complete-btn"><i
+                                    class="bi bi-check-circle me-1"></i> Mark as Complete</button>
+                            <button class="btn btn-lg btn-warning me-2" id="focus-restart-btn-complete"><i
+                                    class="bi bi-arrow-clockwise me-1"></i> Restart Task</button>
+                            <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal"><i
+                                    class="bi bi-x-lg me-1"></i> Back to List</button>
+                        </div>
+                        <div id="focus-break-controls" class="mt-5 d-none">
+                            <!-- In-break controls appear here -->
+                        </div>
+                        <div id="focus-break-completion-controls" class="mt-5 d-none">
+                            <!-- Post-break controls will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Modal for Confirmations and Alerts -->
+    <div class="modal fade" id="genericModal" tabindex="-1" aria-labelledby="genericModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="genericModalLabel">Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="genericModalBody">
+                    <!-- Modal content goes here -->
+                </div>
+                <div class="modal-footer" id="genericModalFooter">
+                    <!-- Modal buttons go here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const themeSelect = document.getElementById('theme-select');
+            const tickSoundSwitch = document.getElementById('tick-sound-switch');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const taskList = document.getElementById('task-list');
+            const timelineLog = document.getElementById('timeline-log');
+            const scheduleList = document.getElementById('schedule-list');
+            const clearTimelineBtn = document.getElementById('clear-timeline-btn');
+            const clearAllTasksBtn = document.getElementById('clear-all-tasks-btn');
+
+            const focusModalEl = document.getElementById('focus-modal');
+            const focusModal = new bootstrap.Modal(focusModalEl);
+            const focusTitle = document.getElementById('focus-title');
+            const focusDescription = document.getElementById('focus-description');
+            const focusTimerDisplay = document.getElementById('focus-timer');
+            const focusProgressContainer = document.getElementById('focus-progress-container');
+            const focusProgressBar = document.getElementById('focus-progress-bar');
+            const focusStartTime = document.getElementById('focus-start-time');
+            const focusEndTime = document.getElementById('focus-end-time');
+            const focusControls = document.getElementById('focus-controls');
+            const focusCompletionControls = document.getElementById('focus-completion-controls');
+            const focusBreakControls = document.getElementById('focus-break-controls');
+            const focusBreakCompletionControls = document.getElementById('focus-break-completion-controls');
+            const focusCompleteBtn = document.getElementById('focus-complete-btn');
+            const focusRestartBtnComplete = document.getElementById('focus-restart-btn-complete');
+
+            const exportTextarea = document.getElementById('export-textarea');
+            const downloadJsonBtn = document.getElementById('download-json-btn');
+            const importTextarea = document.getElementById('import-textarea');
+            const importJsonBtn = document.getElementById('import-json-btn');
+            const importFileInput = document.getElementById('import-file-input');
+            const loadFileBtn = document.getElementById('load-file-btn');
+            const copyPromptBtn = document.getElementById('copy-prompt-btn');
+            const aiPromptText = document.getElementById('ai-prompt-text');
+
+            // Generic Modal elements
+            const genericModalEl = document.getElementById('genericModal');
+            const genericModal = new bootstrap.Modal(genericModalEl);
+            const genericModalLabel = document.getElementById('genericModalLabel');
+            const genericModalBody = document.getElementById('genericModalBody');
+            const genericModalFooter = document.getElementById('genericModalFooter');
+
+
+            // --- State Management ---
+            let tasks = [];
+            let timelineEvents = [];
+            let editingTaskId = null;
+            let tickSoundEnabled = false;
+            let audioContext;
+            let tickOscillator;
+            let bipOscillator;
+            let breakTimerInterval = null;
+            let breakTimeRemaining = 0;
+            let currentBreakTask = null;
+
+            // --- Modal and Alert Functions ---
+            const showAlert = (message, title = 'Alert') => {
+                genericModalLabel.textContent = title;
+                genericModalBody.textContent = message;
+                genericModalFooter.innerHTML = `<button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>`;
+                genericModal.show();
+            };
+
+            const showConfirm = (message, title, onConfirm) => {
+                genericModalLabel.textContent = title;
+                genericModalBody.textContent = message;
+                genericModalFooter.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="genericModalConfirmBtn">Confirm</button>
+                `;
+                const confirmBtn = document.getElementById('genericModalConfirmBtn');
+
+                // Use a one-time event listener to prevent multiple triggers
+                confirmBtn.addEventListener('click', () => {
+                    onConfirm();
+                    genericModal.hide();
+                }, { once: true });
+
+                genericModal.show();
+            };
+
+
+            // --- Utility Functions ---
+            const getContrastingTextColor = (hexColor) => {
+                if (!hexColor) return '#000000';
+                const r = parseInt(hexColor.substr(1, 2), 16);
+                const g = parseInt(hexColor.substr(3, 2), 16);
+                const b = parseInt(hexColor.substr(5, 2), 16);
+                const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+                return (yiq >= 128) ? '#000000' : '#ffffff';
+            };
+
+            const formatTime = (seconds) => {
+                if (isNaN(seconds) || seconds < 0) seconds = 0;
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = Math.floor(seconds % 60);
+                const parts = [];
+                if (h > 0) parts.push(h.toString().padStart(2, '0'));
+                parts.push(m.toString().padStart(2, '0'));
+                parts.push(s.toString().padStart(2, '0'));
+                return parts.join(':');
+            };
+
+            const formatLocaleTime = (date) => {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            const initAudio = () => {
+                if (audioContext) return;
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API is not supported in this browser.");
+                }
+            };
+
+            const playTickSound = () => {
+                if (!tickSoundEnabled || !audioContext) return;
+                tickOscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                tickOscillator.type = 'sine';
+                tickOscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.1);
+
+                tickOscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                tickOscillator.start(audioContext.currentTime);
+                tickOscillator.stop(audioContext.currentTime + 0.1);
+            };
+
+            const playBipSound = () => {
+                if (!audioContext) return;
+                bipOscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                bipOscillator.type = 'square';
+                bipOscillator.frequency.setValueAtTime(1200, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+
+                bipOscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                bipOscillator.start(audioContext.currentTime);
+                bipOscillator.stop(audioContext.currentTime + 0.5);
+            };
+
+            // --- Data Persistence ---
+            const saveTasks = () => {
+                const tasksToSave = tasks.map(task => {
+                    // Exclude properties that shouldn't be saved (like active timer intervals)
+                    const { timer, isNew, startTime, endTime, ...rest } = task;
+                    return rest;
+                });
+                localStorage.setItem('jojo-tasks', JSON.stringify(tasksToSave));
+            };
+
+            const loadTasks = () => {
+                const savedTasks = localStorage.getItem('jojo-tasks');
+                if (savedTasks) {
+                    tasks = JSON.parse(savedTasks).map(task => ({
+                        ...task,
+                        // Initialize transient properties
+                        timer: null,
+                        startTime: null,
+                        endTime: null
+                    }));
+                }
+            };
+
+            const saveTimeline = () => {
+                localStorage.setItem('jojo-timeline', JSON.stringify(timelineEvents));
+            };
+
+            const loadTimeline = () => {
+                const savedTimeline = localStorage.getItem('jojo-timeline');
+                if (savedTimeline) {
+                    timelineEvents = JSON.parse(savedTimeline);
+                }
+            };
+
+
+            // --- Core Application Logic ---
+            const renderAll = () => {
+                renderTasks();
+                renderTimeline();
+                renderSchedule();
+                saveTasks();
+                saveTimeline();
+            };
+
+            const resetAllState = () => {
+                // 1. Pause all running timers
+                tasks.forEach(task => {
+                    if (task.timer) {
+                        clearInterval(task.timer);
+                        task.timer = null;
+                    }
+                });
+
+                // 2. Clear any running break timer
+                if (breakTimerInterval) {
+                    clearInterval(breakTimerInterval);
+                    breakTimerInterval = null;
+                }
+
+                // 3. Reset all state variables
+                tasks = [];
+                timelineEvents = [];
+                editingTaskId = null;
+                breakTimeRemaining = 0;
+                currentBreakTask = null;
+                document.title = 'JoJo-Countdown!';
+
+                // 4. Update the display to reflect the cleared state
+                renderAll();
+            };
+
+            const renderTasks = () => {
+                taskList.innerHTML = '';
+                if (tasks.length === 0) {
+                    taskList.innerHTML = `<p class="text-muted">No tasks yet. Add one to get started!</p>`;
+                    updateExportView(); // Ensure export view is also cleared
+                    return;
+                }
+
+                tasks.forEach((task, index) => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `task-item card card-body ${task.completed ? 'done' : ''}`;
+                    taskEl.dataset.id = task.id;
+
+                    if (task.id === editingTaskId) {
+                        taskEl.draggable = false;
+                        const h = Math.floor(task.totalDuration / 3600);
+                        const m = Math.floor((task.totalDuration % 3600) / 60);
+                        const s = Math.floor(task.totalDuration % 60);
+
+                        taskEl.innerHTML = `
+                            <div class="mb-3">
+                                <label class="form-label">Title</label>
+                                <input type="text" class="form-control" value="${task.title}" id="edit-title-${task.id}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" rows="3" id="edit-desc-${task.id}">${task.description}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Duration Slider</label>
+                                <input type="range" class="form-range" id="edit-slider-${task.id}" min="1" max="120" value="${(h * 60) + m}">
+                                <div class="text-center small" id="edit-slider-value-${task.id}">${(h * 60) + m} minutes</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Duration</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" value="${h}" id="edit-hours-${task.id}" min="0">
+                                        <input type="number" class="form-control" value="${m}" id="edit-minutes-${task.id}" min="0" max="59">
+                                        <input type="number" class="form-control" value="${s}" id="edit-seconds-${task.id}" min="0" max="59">
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Break (min)</label>
+                                    <input type="number" class="form-control" value="${task.breakDuration / 60}" id="edit-break-${task.id}" min="0">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Color</label>
+                                    <input type="color" class="form-control form-control-color" value="${task.color}" id="edit-color-${task.id}">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-secondary me-2 cancel-edit-btn">Cancel</button>
+                                <button class="btn btn-primary save-edit-btn">Save</button>
+                            </div>
+                        `;
+
+                    } else {
+                        taskEl.draggable = true;
+                        // VIEW MODE
+                        const progress = task.totalDuration > 0 ? ((task.totalDuration - task.remainingTime) / task.totalDuration) * 100 : (task.completed ? 100 : 0);
+
+                        let actionButtons = '';
+                        if (!task.completed) {
+                            actionButtons = `
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary start-pause-btn" title="${task.timer ? 'Pause' : 'Start'}" data-action="${task.timer ? 'pause' : 'start'}">
+                                        <i class="bi bi-${task.timer ? 'pause-fill' : 'play-fill'}"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger stop-btn" title="Stop & Reset"><i class="bi bi-stop-fill"></i></button>
+                                    <button class="btn btn-outline-warning restart-btn" title="Restart"><i class="bi bi-arrow-clockwise"></i></button>
+                                    <button class="btn btn-outline-success done-btn" title="Mark Done"><i class="bi bi-check-lg"></i></button>
+                                    <button class="btn btn-outline-secondary focus-btn" title="Focus Mode"><i class="bi bi-arrows-fullscreen"></i></button>
+                                </div>
+                            `;
+                        }
+
+                        const descriptionLines = (task.description || '').split('\n');
+                        const firstLine = descriptionLines[0] || '';
+                        const hasMoreDescription = descriptionLines.length > 1 && descriptionLines.slice(1).join('').trim() !== '';
+
+                        const managementButtons = `
+                                 <div class="btn-group btn-group-sm" role="group">
+                                     <button class="btn btn-outline-secondary move-up-btn" title="Move Up" ${index === 0 ? 'disabled' : ''}><i class="bi bi-arrow-up-circle"></i></button>
+                                     <button class="btn btn-outline-secondary move-down-btn" title="Move Down" ${index === tasks.length - 1 ? 'disabled' : ''}><i class="bi bi-arrow-down-circle"></i></button>
+                                     ${hasMoreDescription ? `<button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#desc-${task.id}" title="Toggle Description"><i class="bi bi-info-circle"></i></button>` : ''}
+                                     ${task.completed ? `<button class="btn btn-outline-warning restart-btn" title="Restart Task"><i class="bi bi-arrow-clockwise"></i></button>` : ''}
+                                     <button class="btn btn-outline-info edit-btn" title="Edit Task"><i class="bi bi-pencil-fill"></i></button>
+                                     <button class="btn btn-outline-danger delete-btn" title="Delete Task"><i class="bi bi-trash-fill"></i></button>
+                                 </div>
+                        `;
+
+                        const descriptionHTML = `
+                            <div class="collapse" id="desc-${task.id}">
+                                 <p class="mb-2 mt-2 pt-2 border-top text-muted small" style="white-space: pre-wrap;">${descriptionLines.slice(1).join('\n')}</p>
+                            </div>
+                        `;
+
+                        taskEl.innerHTML = `
+                            <div class="d-flex align-items-start mb-2">
+                                 <div class="color-badge me-3 mt-1" style="background-color: ${task.color};"></div>
+                                 <div class="flex-grow-1">
+                                     <h5 class="mb-1">${task.completed ? '<span>[DONE]</span> ' : ''}${task.title}</h5>
+                                     <p class="mb-0 text-muted small fst-italic">${firstLine}</p>
+                                 </div>
+                                 <div class="ms-3 d-flex flex-column gap-2 align-items-end">
+                                     ${managementButtons}
+                                     ${actionButtons}
+                                 </div>
+                            </div>
+                            ${hasMoreDescription ? descriptionHTML : ''}
+                            <div class="w-100 mt-auto">
+                                 <div class="progress" style="height: 5px;">
+                                     <div class="progress-bar" role="progressbar" style="width: ${progress}%" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
+                                 </div>
+                                 <div class="d-flex justify-content-between mt-1">
+                                     <span class="small">Time: <span class="fw-bold timer-display">${formatTime(task.remainingTime)}</span></span>
+                                     ${task.breakDuration > 0 ? `<span class="small text-muted">Break: ${task.breakDuration / 60} min</span>` : ''}
+                                 </div>
+                            </div>
+                        `;
+                    }
+                    taskList.appendChild(taskEl);
+                });
+                updateExportView();
+            };
+
+            const renderTimeline = () => {
+                timelineLog.innerHTML = '';
+                if (timelineEvents.length === 0) {
+                    timelineLog.innerHTML = `<p class="text-muted">No activity yet. Start a task to begin your timeline!</p>`;
+                    return;
+                }
+                timelineEvents.slice().reverse().forEach(event => { // Show most recent first
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'timeline-item';
+                    eventEl.innerHTML = `
+                        <div class="fw-bold">${event.time}</div>
+                        <div>${event.action}: <span class="fst-italic">${event.taskTitle}</span></div>
+                    `;
+                    timelineLog.appendChild(eventEl);
+                });
+            };
+
+            const renderSchedule = () => {
+                scheduleList.innerHTML = '';
+
+                let currentTime;
+                const runningTask = tasks.find(t => t.timer);
+
+                if (runningTask && runningTask.endTime) {
+                    currentTime = new Date(runningTask.endTime.getTime());
+                } else {
+                    currentTime = new Date();
+                }
+
+                const pendingTasks = tasks.filter(task => !task.completed);
+
+                if (pendingTasks.length === 0) {
+                    scheduleList.innerHTML = `<p class="text-muted">No pending tasks to schedule. Add a new task!</p>`;
+                    return;
+                }
+
+                let isFirst = true;
+
+                pendingTasks.forEach(task => {
+                    if (runningTask && runningTask.id === task.id) {
+                        return; // Skip the currently running task in the projection
+                    }
+
+                    let startTime = new Date(currentTime.getTime());
+
+                    if (isFirst && runningTask && runningTask.breakDuration > 0) {
+                        const breakStart = new Date(currentTime.getTime());
+                        const breakEnd = new Date(breakStart.getTime() + runningTask.breakDuration * 1000);
+                        const breakEl = document.createElement('div');
+                        breakEl.className = 'timeline-item schedule-break-item';
+                        breakEl.innerHTML = `
+                             <div class="fw-bold">${formatLocaleTime(breakStart)} - ${formatLocaleTime(breakEnd)}</div>
+                             <div><i class="bi bi-cup-hot-fill me-2"></i>Break <span class="text-muted small">(${formatTime(runningTask.breakDuration)})</span></div>
+                         `;
+                        scheduleList.appendChild(breakEl);
+                        startTime = breakEnd;
+                    }
+                    isFirst = false;
+
+                    const endTime = new Date(startTime.getTime() + task.remainingTime * 1000);
+
+                    const taskEl = document.createElement('div');
+                    taskEl.className = 'timeline-item schedule-item';
+                    taskEl.innerHTML = `
+                         <div class="fw-bold">${formatLocaleTime(startTime)} - ${formatLocaleTime(endTime)}</div>
+                         <div><i class="bi bi-list-task me-2"></i><span class="fw-bold">${task.title}</span> <span class="text-muted small">(${formatTime(task.remainingTime)})</span></div>
+                     `;
+                    scheduleList.appendChild(taskEl);
+                    currentTime = endTime;
+
+                    if (task.breakDuration > 0) {
+                        const breakStartTime = new Date(currentTime.getTime());
+                        const breakEndTime = new Date(breakStartTime.getTime() + task.breakDuration * 1000);
+                        const breakEl = document.createElement('div');
+                        breakEl.className = 'timeline-item schedule-break-item';
+                        breakEl.innerHTML = `
+                             <div class="fw-bold">${formatLocaleTime(breakStartTime)} - ${formatLocaleTime(breakEndTime)}</div>
+                             <div><i class="bi bi-cup-hot-fill me-2"></i>Break <span class="text-muted small">(${formatTime(task.breakDuration)})</span></div>
+                         `;
+                        scheduleList.appendChild(breakEl);
+                        currentTime = breakEndTime;
+                    }
+                });
+            };
+
+            const logTimelineEvent = (action, taskTitle) => {
+                const now = new Date();
+                timelineEvents.push({ time: formatLocaleTime(now), action, taskTitle });
+                renderTimeline();
+                saveTimeline(); // Save timeline immediately after logging
+            };
+
+            const completeTask = (task, byTimer) => {
+                pauseTimer(task.id, true); // Pass silent=true to avoid double "pause" log
+                if (task.completed) return;
+
+                task.completed = true;
+                task.remainingTime = 0;
+                logTimelineEvent('Finished', task.title);
+                if (byTimer) playBipSound();
+                renderAll();
+
+                if (task.breakDuration > 0 && byTimer) { // Only auto-start break if completed by timer
+                    startBreak(task);
+                } else if (byTimer && focusModalEl.classList.contains('show') && focusModalEl.dataset.taskId == task.id) {
+                    showFocusCompletionControls(task);
+                }
+            };
+
+            const startTimer = (taskId) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task || task.timer) return;
+
+                if (task.remainingTime < task.totalDuration) {
+                    logTimelineEvent('Resumed', task.title);
+                } else {
+                    logTimelineEvent('Started', task.title);
+                }
+
+                const now = new Date();
+                task.startTime = new Date(now.getTime() - ((task.totalDuration - task.remainingTime) * 1000));
+                task.endTime = new Date(now.getTime() + task.remainingTime * 1000);
+
+                task.timer = setInterval(() => {
+                    task.remainingTime--;
+                    playTickSound();
+                    updateFocusProgressBar(task);
+
+                    if (task.remainingTime <= 0) {
+                        document.title = `[${task.title} - TIMEOUT] - JoJo-Countdown!`;
+                        completeTask(task, true);
+                    } else {
+                        document.title = `[${task.title} - ${formatTime(task.remainingTime)}] - JoJo-Countdown!`;
+                    }
+                    renderAll();
+                    if (focusModalEl.classList.contains('show') && focusModalEl.dataset.taskId == taskId) {
+                        focusTimerDisplay.textContent = formatTime(task.remainingTime);
+                    }
+                }, 1000);
+                renderAll();
+            };
+
+            const pauseTimer = (taskId, silent = false) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task || !task.timer) return;
+
+                if (!silent) {
+                    logTimelineEvent('Paused', task.title);
+                    if (task.endTime) {
+                        task.endTime = null; // Invalidate end time on pause
+                    }
+                }
+
+                clearInterval(task.timer);
+                task.timer = null;
+                document.title = 'JoJo-Countdown!';
+                renderAll();
+            };
+
+            const stopTask = (taskId) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+                pauseTimer(taskId, true); // silent pause
+                task.remainingTime = task.totalDuration;
+                task.startTime = null;
+                task.endTime = null;
+                logTimelineEvent('Stopped', task.title);
+                document.title = 'JoJo-Countdown!';
+                renderAll();
+                if (focusModalEl.classList.contains('show') && focusModalEl.dataset.taskId == taskId) {
+                    showFocusView(taskId);
+                }
+            };
+
+            const restartTask = (taskId) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+                pauseTimer(taskId, true); // silent pause
+                task.remainingTime = task.totalDuration;
+                task.completed = false;
+                logTimelineEvent('Restarted', task.title);
+                startTimer(taskId);
+                if (focusModalEl.classList.contains('show') && focusModalEl.dataset.taskId == taskId) {
+                    showFocusView(taskId);
+                } else {
+                    renderAll();
+                }
+            };
+
+            const deleteTask = (taskId) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+                showConfirm(`Are you sure you want to delete the task "${task.title}"?`, 'Delete Task', () => {
+                    pauseTimer(taskId, true);
+                    tasks = tasks.filter(t => t.id !== taskId);
+                    renderAll();
+                });
+            };
+
+            const updateFocusProgressBar = (task) => {
+                if (!task || !focusModalEl.classList.contains('show')) return;
+                if (focusModalEl.dataset.taskId == task.id) {
+                    const progress = task.totalDuration > 0 ? ((task.totalDuration - task.remainingTime) / task.totalDuration) * 100 : 0;
+                    focusProgressBar.style.width = `${progress}%`;
+                    focusProgressBar.setAttribute('aria-valuenow', progress);
+                    if (task.endTime) {
+                        focusEndTime.textContent = `End: ${formatLocaleTime(task.endTime)}`;
+                    }
+                }
+            };
+
+            const showFocusView = (taskId) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                const modalContent = focusModalEl.querySelector('.modal-content');
+                modalContent.style.backgroundColor = task.color;
+                const textColor = getContrastingTextColor(task.color);
+                modalContent.style.color = textColor;
+                focusProgressBar.style.backgroundColor = textColor;
+
+                focusTitle.textContent = task.title;
+                focusDescription.textContent = task.description || '';
+                focusTimerDisplay.textContent = formatTime(task.remainingTime);
+                focusModalEl.dataset.taskId = taskId;
+
+                focusProgressContainer.classList.remove('d-none');
+
+                if (task.startTime) {
+                    focusStartTime.textContent = `Start: ${formatLocaleTime(task.startTime)}`;
+                } else {
+                    focusStartTime.textContent = `Start: --:--`;
+                }
+
+                if (task.endTime) {
+                    focusEndTime.textContent = `End: ${formatLocaleTime(task.endTime)}`;
+                } else if (task.timer) {
+                    const projectedEnd = new Date(new Date().getTime() + task.remainingTime * 1000);
+                    focusEndTime.textContent = `End: ${formatLocaleTime(projectedEnd)}`;
+                }
+                else {
+                    focusEndTime.textContent = `End: --:--`;
+                }
+                updateFocusProgressBar(task);
+
+
+                focusControls.innerHTML = `
+                    <button class="btn btn-lg me-2 start-pause-btn" style="color: ${textColor}; border-color: ${textColor};">
+                        <i class="bi bi-${task.timer ? 'pause-fill' : 'play-fill'}"></i> ${task.timer ? 'Pause' : 'Start'}
+                    </button>
+                     <button class="btn btn-lg me-2" id="focus-stop-btn" style="color: ${textColor}; border-color: ${textColor};"><i class="bi bi-stop-fill"></i> Stop</button>
+                    <button class="btn btn-lg me-2" id="focus-restart-btn" style="color: ${textColor}; border-color: ${textColor};"><i class="bi bi-arrow-clockwise"></i> Restart</button>
+                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Back to List
+                    </button>
+                `;
+
+                focusCompletionControls.classList.add('d-none');
+                focusBreakControls.classList.add('d-none');
+                focusBreakCompletionControls.classList.add('d-none');
+                focusControls.classList.remove('d-none');
+
+                if (task.remainingTime <= 0 && !task.completed) {
+                    showFocusCompletionControls(task);
+                }
+                focusModal.show();
+            };
+
+            const endBreak = (skipped = false) => {
+                clearInterval(breakTimerInterval);
+                breakTimerInterval = null;
+                playBipSound();
+                logTimelineEvent(skipped ? 'Break Skipped' : 'Break Finished', `After "${currentBreakTask.title}"`);
+
+                const nextTask = tasks.find(t => !t.completed);
+
+                focusTitle.textContent = "Break's Over!";
+                focusTimerDisplay.textContent = "Ready?";
+                focusBreakControls.classList.add('d-none');
+
+                if (nextTask) {
+                    focusBreakCompletionControls.innerHTML = `
+                        <button class="btn btn-lg btn-primary" id="start-next-task-btn">
+                            <i class="bi bi-play-fill me-1"></i> Start: ${nextTask.title}
+                        </button>
+                        <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i> Back to List
+                        </button>
+                    `;
+                } else {
+                    focusBreakCompletionControls.innerHTML = `
+                        <button class="btn btn-lg btn-success" data-bs-dismiss="modal">
+                            <i class="bi bi-check-all me-1"></i> All Tasks Done!
+                        </button>
+                    `;
+                }
+                focusBreakCompletionControls.classList.remove('d-none');
+            };
+
+            const runBreakTimer = () => {
+                breakTimerInterval = setInterval(() => {
+                    breakTimeRemaining--;
+                    focusTimerDisplay.textContent = formatTime(breakTimeRemaining);
+                    playTickSound();
+                    if (breakTimeRemaining <= 0) {
+                        endBreak(false);
+                    }
+                }, 1000);
+            };
+
+            const startBreak = (finishedTask) => {
+                if (!finishedTask || finishedTask.breakDuration <= 0) return;
+
+                currentBreakTask = finishedTask;
+                logTimelineEvent('Break Started', `After "${finishedTask.title}"`);
+
+                const modalContent = focusModalEl.querySelector('.modal-content');
+                modalContent.style.backgroundColor = '#495057'; // Neutral gray for break
+                modalContent.style.color = '#ffffff';
+
+                focusTitle.textContent = "Break Time";
+                focusDescription.textContent = `Up next: ${tasks.find(t => !t.completed)?.title || 'Nothing'}`;
+                focusProgressContainer.classList.add('d-none');
+
+                breakTimeRemaining = finishedTask.breakDuration;
+                focusTimerDisplay.textContent = formatTime(breakTimeRemaining);
+
+                focusControls.classList.add('d-none');
+                focusCompletionControls.classList.add('d-none');
+                focusBreakCompletionControls.classList.add('d-none');
+
+                focusBreakControls.innerHTML = `
+                    <button class="btn btn-lg btn-light me-2" id="break-pause-resume-btn">
+                        <i class="bi bi-pause-fill"></i> Pause Break
+                    </button>
+                    <button class="btn btn-lg btn-warning me-2" id="break-skip-btn">
+                        <i class="bi bi-skip-end-fill"></i> Skip Break
+                    </button>
+                `;
+                focusBreakControls.classList.remove('d-none');
+
+                if (!focusModalEl.classList.contains('show')) focusModal.show();
+                runBreakTimer();
+            };
+
+            const showFocusCompletionControls = (task) => {
+                focusControls.classList.add('d-none');
+                focusBreakControls.classList.add('d-none');
+                focusBreakCompletionControls.classList.add('d-none');
+                focusCompletionControls.classList.remove('d-none');
+                focusProgressContainer.classList.add('d-none');
+            };
+
+            // --- Event Listeners ---
+            themeSelect.addEventListener('change', () => {
+                const theme = themeSelect.value;
+                document.documentElement.setAttribute('data-bs-theme', theme);
+                localStorage.setItem('theme', theme);
+            });
+
+            tickSoundSwitch.addEventListener('change', () => {
+                tickSoundEnabled = tickSoundSwitch.checked;
+                localStorage.setItem('tickSound', tickSoundEnabled);
+                if (tickSoundEnabled) initAudio();
+            });
+
+            clearTimelineBtn.addEventListener('click', () => {
+                showConfirm('Are you sure you want to clear the task log?', 'Clear Log', () => {
+                    timelineEvents = [];
+                    renderAll();
+                });
+            });
+
+            clearAllTasksBtn.addEventListener('click', () => {
+                showConfirm('Are you sure you want to clear all tasks and the timeline? This action cannot be undone.', 'Clear All Data', () => {
+                    resetAllState();
+                });
+            });
+
+            addTaskBtn.addEventListener('click', () => {
+                if (editingTaskId !== null) {
+                    showAlert('Please save or cancel your current edit before adding a new task.', 'Edit in Progress');
+                    return;
+                }
+                const newId = Date.now();
+                tasks.push({
+                    id: newId,
+                    title: 'New Task',
+                    description: '',
+                    color: '#0d6efd',
+                    totalDuration: 1500, // 25 minutes
+                    remainingTime: 1500,
+                    breakDuration: 300, // 5 minutes
+                    completed: false,
+                    isNew: true, // Flag to differentiate from saved tasks
+                    timer: null, startTime: null, endTime: null
+                });
+                editingTaskId = newId;
+                renderAll();
+            });
+
+            taskList.addEventListener('input', e => {
+                const target = e.target;
+                const taskEl = target.closest('.task-item');
+                if (!taskEl || editingTaskId === null) return;
+                const taskId = parseInt(taskEl.dataset.id, 10);
+
+                const hoursInput = document.getElementById(`edit-hours-${taskId}`);
+                const minutesInput = document.getElementById(`edit-minutes-${taskId}`);
+                const slider = document.getElementById(`edit-slider-${taskId}`);
+                const sliderValue = document.getElementById(`edit-slider-value-${taskId}`);
+
+                if (target === slider) {
+                    const totalMinutes = parseInt(slider.value, 10);
+                    hoursInput.value = Math.floor(totalMinutes / 60);
+                    minutesInput.value = totalMinutes % 60;
+                    sliderValue.textContent = `${totalMinutes} minutes`;
+                } else if (target === hoursInput || target === minutesInput) {
+                    const totalMinutes = (parseInt(hoursInput.value) || 0) * 60 + (parseInt(minutesInput.value) || 0);
+                    slider.value = totalMinutes;
+                    sliderValue.textContent = `${totalMinutes} minutes`;
+                }
+            });
+
+            taskList.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+
+                if (!target) return;
+
+                const taskEl = target.closest('.task-item');
+                const taskId = parseInt(taskEl.dataset.id, 10);
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                if (target.classList.contains('start-pause-btn')) {
+                    const action = target.dataset.action;
+                    if (action === 'start') {
+                        startTimer(taskId);
+                        showFocusView(taskId);
+                    }
+                    else {
+                        pauseTimer(taskId);
+                    }
+                } else if (target.classList.contains('stop-btn')) {
+                    stopTask(taskId);
+                } else if (target.classList.contains('restart-btn')) {
+                    restartTask(taskId);
+                } else if (target.classList.contains('done-btn')) {
+                    completeTask(task, false);
+                } else if (target.classList.contains('delete-btn')) {
+                    deleteTask(taskId);
+                } else if (target.classList.contains('focus-btn')) {
+                    showFocusView(taskId);
+                } else if (target.classList.contains('edit-btn')) {
+                    if (editingTaskId !== null) {
+                        showAlert('Please save or cancel your current edit first.', 'Edit in Progress');
+                        return;
+                    }
+                    editingTaskId = taskId;
+                    renderAll();
+                } else if (target.classList.contains('move-up-btn')) {
+                    const index = tasks.findIndex(t => t.id === taskId);
+                    if (index > 0) {
+                        [tasks[index], tasks[index - 1]] = [tasks[index - 1], tasks[index]];
+                        renderAll();
+                    }
+                } else if (target.classList.contains('move-down-btn')) {
+                    const index = tasks.findIndex(t => t.id === taskId);
+                    if (index < tasks.length - 1) {
+                        [tasks[index], tasks[index + 1]] = [tasks[index + 1], tasks[index]];
+                        renderAll();
+                    }
+                } else if (target.classList.contains('save-edit-btn')) {
+                    const title = document.getElementById(`edit-title-${taskId}`).value.trim();
+                    const description = document.getElementById(`edit-desc-${taskId}`).value;
+                    const color = document.getElementById(`edit-color-${taskId}`).value;
+                    const hours = parseInt(document.getElementById(`edit-hours-${taskId}`).value) || 0;
+                    const minutes = parseInt(document.getElementById(`edit-minutes-${taskId}`).value) || 0;
+                    const seconds = parseInt(document.getElementById(`edit-seconds-${taskId}`).value) || 0;
+                    const breakDuration = parseInt(document.getElementById(`edit-break-${taskId}`).value) || 0;
+
+                    if (!title) {
+                        showAlert('Title is required.');
+                        return;
+                    }
+
+                    task.title = title;
+                    task.description = description;
+                    task.color = color;
+                    task.totalDuration = (hours * 3600) + (minutes * 60) + seconds;
+                    task.remainingTime = task.totalDuration;
+                    task.breakDuration = breakDuration * 60;
+                    delete task.isNew;
+                    editingTaskId = null;
+                    renderAll();
+                } else if (target.classList.contains('cancel-edit-btn')) {
+                    if (task.isNew) {
+                        tasks = tasks.filter(t => t.id !== taskId);
+                    }
+                    editingTaskId = null;
+                    renderAll();
+                }
+            });
+
+            focusModalEl.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                // Task controls
+                if (focusControls.contains(target)) {
+                    const taskId = parseInt(focusModalEl.dataset.taskId, 10);
+                    const task = tasks.find(t => t.id === taskId);
+                    if (!task) return;
+
+                    if (target.classList.contains('start-pause-btn')) {
+                        if (task.timer) {
+                            pauseTimer(taskId);
+                        } else {
+                            startTimer(taskId);
+                        }
+                        showFocusView(taskId);
+                    } else if (target.id === 'focus-stop-btn') {
+                        stopTask(taskId);
+                    } else if (target.id === 'focus-restart-btn') {
+                        restartTask(taskId);
+                    }
+                }
+
+                // Break controls
+                if (focusBreakControls.contains(target)) {
+                    if (target.id === 'break-pause-resume-btn') {
+                        const btn = document.getElementById('break-pause-resume-btn');
+                        if (breakTimerInterval) { // Pause
+                            clearInterval(breakTimerInterval);
+                            breakTimerInterval = null;
+                            logTimelineEvent('Break Paused', `After "${currentBreakTask.title}"`);
+                            btn.innerHTML = `<i class="bi bi-play-fill"></i> Resume Break`;
+                        } else { // Resume
+                            logTimelineEvent('Break Resumed', `After "${currentBreakTask.title}"`);
+                            runBreakTimer();
+                            btn.innerHTML = `<i class="bi bi-pause-fill"></i> Pause Break`;
+                        }
+                    } else if (target.id === 'break-skip-btn') {
+                        endBreak(true);
+                    }
+                }
+
+                // Post-break controls
+                if (focusBreakCompletionControls.contains(target) && target.id === 'start-next-task-btn') {
+                    const nextTask = tasks.find(t => !t.completed);
+                    if (nextTask) {
+                        startTimer(nextTask.id);
+                        showFocusView(nextTask.id);
+                    }
+                }
+            });
+
+            focusCompleteBtn.onclick = () => {
+                const taskId = parseInt(focusModalEl.dataset.taskId, 10);
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    completeTask(task, false);
+                    if (task.breakDuration <= 0) focusModal.hide();
+                }
+            };
+
+            focusRestartBtnComplete.onclick = () => {
+                const taskId = parseInt(focusModalEl.dataset.taskId, 10);
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    restartTask(taskId);
+                }
+            };
+
+            focusModalEl.addEventListener('hide.bs.modal', () => {
+                if (breakTimerInterval) {
+                    clearInterval(breakTimerInterval);
+                    breakTimerInterval = null;
+                }
+                document.title = 'JoJo-Countdown!';
+            });
+
+            // --- Drag and Drop Listeners ---
+            taskList.addEventListener('dragstart', e => {
+                const taskEl = e.target.closest('.task-item');
+                if (taskEl && taskEl.draggable) {
+                    taskEl.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', taskEl.dataset.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                } else {
+                    e.preventDefault();
+                }
+            });
+
+            taskList.addEventListener('dragend', e => {
+                const taskEl = e.target.closest('.task-item');
+                if (taskEl) {
+                    taskEl.classList.remove('dragging');
+                }
+            });
+
+            taskList.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(taskList, e.clientY);
+                const dragging = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    taskList.appendChild(dragging);
+                } else {
+                    taskList.insertBefore(dragging, afterElement);
+                }
+            });
+
+            const getDragAfterElement = (container, y) => {
+                const draggableElements = [...container.querySelectorAll('.task-item:not(.dragging)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            taskList.addEventListener('drop', e => {
+                e.preventDefault();
+                const draggedId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                const afterElement = getDragAfterElement(taskList, e.clientY);
+
+                const fromIndex = tasks.findIndex(t => t.id === draggedId);
+                const [movedTask] = tasks.splice(fromIndex, 1);
+
+                if (afterElement == null) {
+                    tasks.push(movedTask);
+                } else {
+                    const afterId = parseInt(afterElement.dataset.id, 10);
+                    const toIndex = tasks.findIndex(t => t.id === afterId);
+                    tasks.splice(toIndex, 0, movedTask);
+                }
+                renderAll();
+            });
+
+
+            // --- Import/Export Logic ---
+            const updateExportView = () => {
+                if (tasks.length === 0) {
+                    exportTextarea.value = '';
+                    return;
+                }
+                const exportableTasks = tasks.map(t => ({
+                    title: t.title,
+                    description: t.description,
+                    duration: Math.round(t.totalDuration / 60),
+                    breakDuration: Math.round(t.breakDuration / 60),
+                    color: t.color,
+                    completed: t.completed
+                }));
+                exportTextarea.value = JSON.stringify(exportableTasks, null, 2);
+            };
+
+            downloadJsonBtn.addEventListener('click', () => {
+                if (!exportTextarea.value) {
+                    showAlert('There are no tasks to export.');
+                    return;
+                }
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportTextarea.value);
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "jojo-countdown-tasks.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            });
+
+            const importTasks = (jsonString) => {
+                try {
+                    const importedData = JSON.parse(jsonString);
+                    if (!Array.isArray(importedData)) throw new Error("JSON must be an array.");
+
+                    // *** FIX: Fully reset the application state before importing new data ***
+                    resetAllState();
+
+                    tasks = importedData.map((item, index) => {
+                        if (!item.title || typeof item.duration !== 'number') {
+                            console.warn("Skipping invalid task item in imported JSON:", item);
+                            return null; // Skip invalid or malformed task objects
+                        }
+                        const totalDurationSecs = (item.duration || 0) * 60;
+                        return {
+                            id: Date.now() + index, // More reliable unique ID
+                            title: item.title,
+                            description: item.description || "",
+                            color: item.color || "#0d6efd",
+                            totalDuration: totalDurationSecs,
+                            remainingTime: item.completed ? 0 : totalDurationSecs,
+                            breakDuration: (item.breakDuration || 0) * 60,
+                            completed: item.completed || false,
+                            timer: null,
+                            startTime: null,
+                            endTime: null
+                        };
+                    }).filter(Boolean); // Filter out any null items that were skipped
+
+                    renderAll();
+                    showAlert("Tasks imported successfully!");
+
+                    // Switch to the main task tab to show the new tasks
+                    const manageTabBtn = document.getElementById('manage-tab');
+                    const tab = new bootstrap.Tab(manageTabBtn);
+                    tab.show();
+
+                } catch (error) {
+                    showAlert(`Import failed: ${error.message}`);
+                    // If import fails, reload original tasks to prevent a blank state
+                    loadTasks();
+                    loadTimeline();
+                    renderAll();
+                }
+            };
+
+            importJsonBtn.addEventListener('click', () => {
+                const jsonString = importTextarea.value;
+                if (!jsonString.trim()) {
+                    showAlert('Import text area is empty. Please paste your task JSON.');
+                    return;
+                }
+                showConfirm("This will replace all current tasks and reset the timeline. Are you sure?", 'Import Tasks', () => {
+                    importTasks(jsonString);
+                });
+            });
+
+            loadFileBtn.addEventListener('click', () => importFileInput.click());
+
+            importFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    showConfirm("This will replace all current tasks and reset the timeline. Are you sure?", 'Import Tasks from File', () => {
+                        importTasks(e.target.result);
+                    });
+                };
+                reader.readAsText(file);
+                importFileInput.value = ''; // Reset file input
+            });
+
+            copyPromptBtn.addEventListener('click', () => {
+                // Using the older execCommand for wider compatibility within iFrames
+                const el = document.createElement('textarea');
+                el.value = aiPromptText.textContent.trim();
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+
+                const originalText = copyPromptBtn.innerHTML;
+                copyPromptBtn.innerHTML = `<i class="bi bi-check-lg me-1"></i> Copied!`;
+                setTimeout(() => { copyPromptBtn.innerHTML = originalText; }, 2000);
+            });
+
+            // --- Initialization ---
+            const init = () => {
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+                themeSelect.value = savedTheme;
+
+                const savedTickSound = localStorage.getItem('tickSound');
+                if (savedTickSound) {
+                    tickSoundEnabled = savedTickSound === 'true';
+                    tickSoundSwitch.checked = tickSoundEnabled;
+                    if (tickSoundEnabled) initAudio();
+                }
+
+                loadTasks();
+                loadTimeline();
+                renderAll();
+            }
+
+            init();
+        });
+    </script>
+</body>
+
+
+</html>
