@@ -1,4 +1,4 @@
-rm # 🚀 JoJo-Countdown!
+# 🚀 JoJo-Countdown!
 
 > **Keep your tasks and focus on track!**
 
