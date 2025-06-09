@@ -1,4 +1,4 @@
-# 🚀 JoJo-Countdown!
+rm # 🚀 JoJo-Countdown!
 
 > **Keep your tasks and focus on track!**
 
@@ -7,6 +7,9 @@
 
 ![JoJo Logo](assets/icons/icon.png)
 
+Demo (webapp): https://joedlopes.github.io/jojo-countdown/
+
+You can also download the current builds for Linux or Windows at https://github.com/joedlopes/jojo-countdown/releases/tag/v0.0.1
 
 ---
 
